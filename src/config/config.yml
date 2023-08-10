@@ -1,0 +1,13 @@
+entities:
+  - Echantillon
+
+drug_type:
+  - 'Cannabis'
+
+relations:
+  - estProcheDe
+
+target_relations:
+  - estProcheDe
+
+# entities_limit: 1
