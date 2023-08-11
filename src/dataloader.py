@@ -37,7 +37,7 @@ class Dataloader () :
             relation_full_name = self.prefix + relation_name
 
             for r in ret['results']['bindings']:
-                triplets.append((r['s']['value'], relation_full_name, r['o']['value']))
+                triplets.append((r['s']['value'], relation_full_name, r['o']['value'], 1))
 
             return triplets
         
@@ -63,7 +63,7 @@ class Dataloader () :
         except Exception as e:
             print(e)
 
-    def loadInstances (self, class_name, limit=None):
+    def load_instances (self, class_name, limit=None):
         query = '''
                 PREFIX : <http://www.stups.fr/ontologies/2023/stups/>
 
