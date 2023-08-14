@@ -5,10 +5,10 @@ drug_type:
   - 'Cannabis'
 
 relations:
-  - estProcheDe
+  - http://www.stups.fr/ontologies/2023/stups/estProcheDe
 
 target_relations:
-  - estProcheDe
+  - http://www.stups.fr/ontologies/2023/stups/estProcheDe
 
 network:
   - graph_db_host: "host.docker.internal"

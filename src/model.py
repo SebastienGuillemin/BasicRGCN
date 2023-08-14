@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from dataloader import Dataloader
-from config.config import *
 from adjacencymatricesbuilder import MatricesBuilder
 import math
 from utils import *
@@ -21,7 +20,8 @@ class ConvolutionalLayer(nn.Module):
         y = torch.zeros(self.entities_count, self.out_features)
 
         for i in range(0, self.relations_count):
-            temp = torch.matmul(torch.matmul(self.adjacency_matrices[i], x), self.weight[i].t())
+            temp = torch.matmul(self.adjacency_matrices[i], x)
+            temp = torch.matmul(temp, self.weight[i].t())
             y += temp
 
         return y
@@ -33,15 +33,18 @@ class DistMult (nn.Module):
         self.relations_count = relations_count
         self.relations_matrices = torch.empty(relations_count, features_count, features_count)
 
-        for i in range (0, relations_count):
+        for i in range (0, self.relations_count):
             self.relations_matrices[i] = torch.diag(torch.rand(features_count))
 
         self.relations_matrices = nn.Parameter(self.relations_matrices)
 
-        print(self.relations_matrices)
-
     def forward(self, x):
-        return torch.matmul(torch.matmul(x, self.relations_matrices), x.t())
+        res = torch.empty(self.relations_count, x.size()[0], x.size()[0])
+        
+        for i in range (0, self.relations_count):
+            res[i] = torch.matmul(torch.matmul(x, self.relations_matrices[i]), x.t())
+
+        return res
     
 class BasicRGCN (nn.Module):
     def __init__(self, adjacency_matrices, in_features, out_features, matrice_builder, layers_count=2):
@@ -54,7 +57,7 @@ class BasicRGCN (nn.Module):
             self.model.append(ConvolutionalLayer(adjacency_matrices, in_features, out_features))
             self.model.append(nn.ReLU())
             
-        self.model.append(DistMult(out_features, adjacency_matrices.size()[0]))
+        self.model.append(DistMult(out_features, adjacency_matrices.size()[0] - 1))
 
         print(self.model)
 
@@ -62,20 +65,23 @@ class BasicRGCN (nn.Module):
         return self.model(x)
     
 class Loss(nn.Module):
-    def __init__(self):
+    def __init__(self, matrice_builder, relations_count):
         super().__init__()
+        self.matrice_builder = matrice_builder
+        self.relations_count = relations_count
         
-    def forward (self, predicted_values, training_examples):
+    def forward (self, predicted_values, labels):
         # pred = Matrice N * N probabilité de la relation entre les pairs de noeuds
         # y = liste d'exemples positifs et négatifs de lien entre des pairs de noeuds
         negative_examples = 0        
         loss = 0        
         
-        for samples in training_examples:
+        for samples in labels:
             entity_1_index = self.matrice_builder.get_index(samples[0])
             entity_2_index = self.matrice_builder.get_index(samples[2])
-            
-            predicted_value = predicted_values[entity_1_index][entity_2_index]
+            relation_index = self.matrice_builder.get_relation_name_mapping(samples[1])
+
+            predicted_value = predicted_values[relation_index][entity_1_index][entity_2_index].item()
             label = samples[3]  # 0 or 1
             
             if label == 0:
@@ -83,11 +89,12 @@ class Loss(nn.Module):
             
             sig_value = sigmoid(predicted_value)
             
-            loss += label * math.log (sig_value) + (1 - label) * math.log (1 - sig_value)
+            # TODO : comment faire avec le logarithme ?
+            loss += label * sig_value + (1 - label) * (1 - sig_value)
             
-        loss = (-1) / ((1 + negative_examples) * training_examples.size()) * loss
+        loss = (-1) / ((1 + negative_examples) * labels.__len__()) * loss
         
-        return loss
+        return torch.tensor([loss])
 
 
 if __name__ == '__main__':

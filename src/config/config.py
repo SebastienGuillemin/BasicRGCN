@@ -7,7 +7,7 @@ with open("config/config.yml", "r") as stream:
 
         entities_list = config['entities'][0]
         drug_types_list = config['drug_type'][0]
-        relations_list = config['relations'][0]
+        relations_list = config['relations']
         target_relations_list = config['target_relations'][0]
         network = config['network'][0]
         

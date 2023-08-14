@@ -21,7 +21,7 @@ class Dataloader () :
         query = '''
                 PREFIX : <%s>
                 SELECT * WHERE {
-                ?s :%s ?o .
+                ?s <%s> ?o .
                     FILTER(?s != ?o)
                 }
                 ''' % (self.prefix, relation_name)
@@ -30,14 +30,15 @@ class Dataloader () :
             query += 'LIMIT %s' % (limit)
         
         self.sparql.setQuery(query)
+        
+        # print(query)
 
         try:
             ret = self.sparql.queryAndConvert()
             triplets = []
-            relation_full_name = self.prefix + relation_name
 
             for r in ret['results']['bindings']:
-                triplets.append((r['s']['value'], relation_full_name, r['o']['value'], 1))
+                triplets.append((r['s']['value'], relation_name, r['o']['value'], 1))
 
             return triplets
         
