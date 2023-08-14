@@ -61,7 +61,6 @@ class BasicRGCN (nn.Module):
     def forward(self, x):
         return self.model(x)
     
-<<<<<<< HEAD
 class Loss(nn.module):
     def __init__(self):
         super().__init__()
@@ -89,14 +88,6 @@ class Loss(nn.module):
         loss = (-1) / ((1 + negative_examples) * training_examples.size()) * loss
         
         return loss
-
-    
-=======
-    def loss (self, pred, y):
-        # pred = Matrice N * N probabilité de la relation entre les pairs de noeuds
-        # y = liste d'exemples positifs et négatifs de lien entre des pairs de noeuds
-        pass
->>>>>>> 179af60c9e9b494228702155a3c4bb071a263907
 
 
 if __name__ == '__main__':
