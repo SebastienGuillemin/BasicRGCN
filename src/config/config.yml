@@ -10,4 +10,7 @@ relations:
 target_relations:
   - estProcheDe
 
+network:
+  - graph_db_host: "host.docker.internal"
+
 # entities_limit: 1

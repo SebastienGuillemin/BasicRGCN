@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 from model import *
 from adjacencymatricesbuilder import MatricesBuilder
+from linkdataset import LinkDataset
 from dataloader import Dataloader
 
 data_loader = Dataloader()
@@ -10,14 +11,21 @@ raw_data_entities = data_loader.load_instances("Echantillon")
 
 matrice_builder = MatricesBuilder(raw_data_entities, raw_data_relations)
 
-adjacencies_matrix = matrice_builder.construct_matrices()
+adjacency_matrices = matrice_builder.construct_matrices()
 
 def negative_sampling(original_data, split_ratio=0.7):
-    split_index = math.floor(len(original_data) * split_ratio)
-    training_data = original_data[:split_index]
-    testing_data = original_data[split_index:]
+    # TODO : implement negative sampling
+    training_data = []
+    testing_data = []
     
-    return training_data, testing_data
+    for relation_name in original_data:
+        relation_list = original_data[relation_name]
+        split_index = math.floor(len(relation_list) * split_ratio)
+        
+        training_data += relation_list[:split_index]
+        testing_data += relation_list[split_index:]
+    
+    return LinkDataset(training_data), LinkDataset(testing_data)
     
 
 training_data, testing_data  = negative_sampling(raw_data_relations)
@@ -27,11 +35,6 @@ batch_size = 64
 # Create data loaders.
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(testing_data, batch_size=batch_size)
-
-for X, y in test_dataloader:
-    print(f"Shape of X [N, C, H, W]: {X.shape}")
-    print(f"Shape of y: {y.shape} {y.dtype}")
-    break
 
 device = (
     "cuda"
@@ -43,16 +46,17 @@ device = (
 print(f"Using {device} device")
 
 
-rgcn = BasicRGCN(2, 1)
+rgcn = BasicRGCN(adjacency_matrices, 1, 1, matrice_builder)
 print(rgcn)
 
 loss_fn = Loss()
 optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
 
-def train(dataloader, model, loss_fn, optimizer):
-    size = len(dataloader.dataset)
+def train(train_dataloader, model, loss_fn, optimizer):
+    size = len(train_dataloader.dataset)
     model.train()
-    for batch, (X, y) in enumerate(dataloader):
+    for batch in enumerate(train_dataloader):
+        print(batch)
         X, y = X.to(device), y.to(device)
 
         # Compute prediction error
@@ -69,13 +73,13 @@ def train(dataloader, model, loss_fn, optimizer):
             loss, current = loss.item(), (batch + 1) * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-def test(dataloader, model, loss_fn):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
+def test(test_dataloader, model, loss_fn):
+    size = len(test_dataloader.dataset)
+    num_batches = len(test_dataloader)
     model.eval()
     test_loss, correct = 0, 0
     with torch.no_grad():
-        for X, y in dataloader:
+        for X, y in test_dataloader:
             X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()

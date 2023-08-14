@@ -61,7 +61,7 @@ class BasicRGCN (nn.Module):
     def forward(self, x):
         return self.model(x)
     
-class Loss(nn.module):
+class Loss(nn.Module):
     def __init__(self):
         super().__init__()
         

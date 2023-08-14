@@ -4,7 +4,7 @@ from config.config import *
 
 class Dataloader () :
     def __init__(self) :
-        self.sparql = SPARQLWrapper('http://localhost:7200/repositories/STUPS')
+        self.sparql = SPARQLWrapper('http://%s:7200/repositories/STUPS' % (network['graph_db_host']))
         self.sparql.setReturnFormat(JSON)
         
         self.prefix = 'http://www.stups.fr/ontologies/2023/stups/'
@@ -83,7 +83,7 @@ class Dataloader () :
             instances = []
 
             for r in ret['results']['bindings']:
-                instances.append(r['e']['value'],)
+                instances.append(r['i']['value'])
 
             return instances
 
