@@ -1,30 +1,32 @@
 import torch
 from torch import nn
 from dataloader import Dataloader
-from adjacencymatricesbuilder import MatricesBuilder
 import math
 from utils import *
+from graph import Graph
 
 class ConvolutionalLayer(nn.Module):
-    def __init__(self, adjacency_matrices, in_features, out_features):
+    def __init__(self, relations_count, in_features_count, out_features_count):
         super().__init__()
-        self.adjacency_matrices = adjacency_matrices
-        self.entities_count = len(adjacency_matrices[0])
-        self.relations_count = len(adjacency_matrices)
-        self.in_features = in_features
-        self.out_features = out_features
+        self.relations_count = relations_count
+        self.in_features_count = in_features_count
+        self.out_features_count = out_features_count
 
-        self.weight = nn.Parameter(torch.rand(self.relations_count, self.out_features, self.in_features))    # W has size ((d+1), d).
+        self.weight = nn.Parameter(torch.rand(self.relations_count, self.out_features_count, self.in_features_count))    # W has size ((d+1), d).
 
-    def forward(self, x):
-        y = torch.zeros(self.entities_count, self.out_features)
-
+    def forward(self, x: Graph):
+        entities_count = x.get_entities_count()
+        adjacency_matrices = x.get_adjacency_matrices()
+        y = torch.zeros(entities_count, self.out_features_count)
+        features = x.get_features()
+        
         for i in range(0, self.relations_count):
-            temp = torch.matmul(self.adjacency_matrices[i], x)
+            temp = torch.matmul(adjacency_matrices[i], features)
             temp = torch.matmul(temp, self.weight[i].t())
             y += temp
 
-        return y
+        x.set_features(y)
+        return x
 
 class DistMult (nn.Module):
     def __init__ (self, features_count, relations_count):
@@ -38,63 +40,44 @@ class DistMult (nn.Module):
 
         self.relations_matrices = nn.Parameter(self.relations_matrices)
 
-    def forward(self, x):
-        res = torch.empty(self.relations_count, x.size()[0], x.size()[0])
+    def forward(self, x: Graph):
+        entity_count = x.get_entities_count()
+        features = x.get_features()
+        res = torch.empty(self.relations_count, entity_count, entity_count)
         
-        for i in range (0, self.relations_count):
-            res[i] = torch.matmul(torch.matmul(x, self.relations_matrices[i]), x.t())
+        for i in range (1, self.relations_count):
+            res[i] = torch.matmul(torch.matmul(features, self.relations_matrices[i]), features.t())
 
         return res
     
 class BasicRGCN (nn.Module):
-    def __init__(self, adjacency_matrices, in_features, out_features, matrice_builder, layers_count=2):
+    def __init__(self, in_features, out_features, relations_count, layers_count=2):
         super().__init__()
         self.layers_count = layers_count
         self.model = nn.Sequential()
-        self.matrice_builder = matrice_builder
 
         for i in range(layers_count):
-            self.model.append(ConvolutionalLayer(adjacency_matrices, in_features, out_features))
-            self.model.append(nn.ReLU())
+            self.model.append(ConvolutionalLayer(relations_count, in_features, out_features))
+            # self.model.append(nn.ReLU())
             
-        self.model.append(DistMult(out_features, adjacency_matrices.size()[0] - 1))
+        self.model.append(DistMult(out_features, relations_count))
 
         print(self.model)
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, graph):
+        return self.model(graph)
     
 class Loss(nn.Module):
-    def __init__(self, matrice_builder, relations_count):
+    def __init__(self):
         super().__init__()
-        self.matrice_builder = matrice_builder
-        self.relations_count = relations_count
         
-    def forward (self, predicted_values, labels):
+    def forward (self, predicted_values, graph: Graph):
         # pred = Matrice N * N probabilité de la relation entre les pairs de noeuds
         # y = liste d'exemples positifs et négatifs de lien entre des pairs de noeuds
-        negative_examples = 0        
-        loss = 0        
+        adjacency_matrixes = graph.get_adjacency_matrices()
+        loss = torch.mean((predicted_values - adjacency_matrixes)**2)
         
-        for samples in labels:
-            entity_1_index = self.matrice_builder.get_index(samples[0])
-            entity_2_index = self.matrice_builder.get_index(samples[2])
-            relation_index = self.matrice_builder.get_relation_name_mapping(samples[1])
-
-            predicted_value = predicted_values[relation_index][entity_1_index][entity_2_index].item()
-            label = samples[3]  # 0 or 1
-            
-            if label == 0:
-                negative_examples += 1
-            
-            sig_value = sigmoid(predicted_value)
-            
-            # TODO : comment faire avec le logarithme ?
-            loss += label * sig_value + (1 - label) * (1 - sig_value)
-            
-        loss = (-1) / ((1 + negative_examples) * labels.__len__()) * loss
-        
-        return torch.tensor([loss])
+        return loss
 
 
 if __name__ == '__main__':

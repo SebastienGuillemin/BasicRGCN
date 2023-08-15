@@ -1,5 +1,4 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
-from adjacencymatricesbuilder import MatricesBuilder
 from config.config import *
 
 class Dataloader () :
