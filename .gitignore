@@ -1,3 +1,4 @@
 docker/
 /src/data/
+/src/__pycache__
 start-docker.bat

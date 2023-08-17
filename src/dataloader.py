@@ -8,19 +8,22 @@ class Dataloader () :
         
         self.prefix = 'http://www.stups.fr/ontologies/2023/stups/'
 
-    def load_relations_triples(self, relations_names, limit=None) :
+    def load_relations_triplets(self, relations_names, limit=None) :
         triplets = {}
 
         for relation_name in relations_names:
-            triplets[relation_name] = self._load_relation_triples(relation_name, limit)
+            realtion_triplets = self._load_relation_triplets(relation_name, limit)
+
+            if (realtion_triplets != None):
+                triplets[relation_name] = realtion_triplets
 
         return triplets
 
-    def _load_relation_triples(self, relation_name, limit=None) :
+    def _load_relation_triplets(self, relation_name, limit=None) :
         query = '''
                 PREFIX : <%s>
                 SELECT * WHERE {
-                ?s <%s> ?o .
+                ?s :%s ?o .
                     FILTER(?s != ?o)
                 }
                 ''' % (self.prefix, relation_name)
@@ -46,13 +49,13 @@ class Dataloader () :
 
     def count_instances (self, class_name):
         query = '''
-                PREFIX : <http://www.stups.fr/ontologies/2023/stups/>
+                PREFIX : <%s>
 
                 SELECT (COUNT(?e) as ?cpt)
                 WHERE { 
                     ?e a :%s
                 }
-                ''' % (class_name)
+                ''' % (self.prefix, class_name)
     
         self.sparql.setQuery(query)
 
@@ -65,13 +68,13 @@ class Dataloader () :
 
     def load_instances (self, class_name, limit=None):
         query = '''
-                PREFIX : <http://www.stups.fr/ontologies/2023/stups/>
+                PREFIX : <%s>
 
                 SELECT ?i
                 WHERE { 
                     ?i a :%s
                 }
-                ''' % (class_name)
+                ''' % (self.prefix, class_name)
         
         if limit != None:
             query += 'LIMIT %s' % (limit)
@@ -101,14 +104,14 @@ class Dataloader () :
 
     def _load_sample_by_drug_type (self, drug_type, limit=None):
         query = '''
-                PREFIX : <http://www.stups.fr/ontologies/2023/stups/>
+                PREFIX : <%s>
 
                 SELECT ?e
                 WHERE { 
                     ?e a :Echantillon .
                     ?e :typeDrogue '%s'
                 }
-                ''' % (drug_type)
+                ''' % (self.prefix, drug_type)
         
         if limit != None:
             query += 'LIMIT %s' % (limit)

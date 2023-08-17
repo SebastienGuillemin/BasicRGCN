@@ -25,8 +25,7 @@ class ConvolutionalLayer(nn.Module):
             temp = torch.matmul(temp, self.weight[i].t())
             y += temp
 
-        x.set_features(y)
-        return x
+        return Graph(x.get_name(), x.get_adjacency_matrices(), y)
 
 class DistMult (nn.Module):
     def __init__ (self, features_count, relations_count):
@@ -61,8 +60,6 @@ class BasicRGCN (nn.Module):
             # self.model.append(nn.ReLU())
             
         self.model.append(DistMult(out_features, relations_count))
-
-        print(self.model)
 
     def forward(self, graph):
         return self.model(graph)

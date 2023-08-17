@@ -20,7 +20,7 @@ def negative_sampling(original_data, split_ratio=0.7):
 
 def retrieve_data():
     data_loader = Dataloader()
-    raw_data_relations = data_loader.load_relations_triples(relations_list)
+    raw_data_relations = data_loader.load_relations_triplets(relations_list)
     raw_data_entities = data_loader.load_instances("Echantillon")
     
     return raw_data_relations, raw_data_entities
@@ -42,34 +42,50 @@ def train(training_graph: Graph, model, loss_fn, optimizer, device):
     loss = loss_fn(pred, training_graph)
 
     # Backpropagation
-    loss.backward()
+    loss.backward(retain_graph=True)
     optimizer.step()
     optimizer.zero_grad()
 
     loss = loss.item()
     print(f"loss: {loss:>7f}")
 
-def test(feature_matrices, training_data, model, loss_fn):
+def test(testing_graph: Graph, model, loss_fn):
     # size = len(test_dataloader.dataset)
     # num_batches = len(test_dataloader)
     model.eval()
     test_loss, correct = 0, 0
     with torch.no_grad():
-        pred = model(feature_matrices)
-        test_loss += loss_fn(pred, training_data).item()
-        correct += (pred.argmax(1) == training_data).type(torch.float).sum().item()
+        pred = model(testing_graph)
+        test_loss += loss_fn(pred, testing_graph).item()
+        # correct += (pred.argmax(1) == training_data).type(torch.float).sum().item()
     # test_loss /= num_batches
     # correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    # print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    print(f"Test Error: \nAvg loss: {test_loss:>8f} \n")
 
 
 if __name__ == '__main__':
+    torch.autograd.set_detect_anomaly(True)
     ## Retrieve data
     raw_data_relations, raw_data_entities = retrieve_data()
+
+    if (raw_data_relations == None):
+        raise Exception('Impossible to retrieve data for relations.')
+    else:
+        print('%d relations retrieved.' % (len(raw_data_relations)))
+
+    if (raw_data_entities == None):
+        raise Exception('Impossible to retrieve data for entities.')
+    else:
+        print('%d entities retrieved.' % (len(raw_data_entities)))
+
 
     ## Create matrice
     matrice_builder = GraphBuilder(raw_data_entities, raw_data_relations)
     training_graph, testing_graph = matrice_builder.construct_graphs()
+
+    print(training_graph)
+    print(testing_graph)
 
     ## Create dataset
     # training_data, testing_data = negative_sampling(raw_data_relations)
@@ -90,6 +106,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
     epochs = 10
     for t in range(epochs):
+
         print(f"Epoch {t+1}\n-------------------------------")
         train(training_graph, rgcn, loss_fn, optimizer, device)
         test(testing_graph, rgcn, loss_fn)

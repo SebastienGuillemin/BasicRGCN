@@ -1,5 +1,6 @@
 class Graph():
-    def __init__(self, adjacency_matrices, features):
+    def __init__(self, name, adjacency_matrices, features):
+        self.name = name
         self.adjacency_matrices = adjacency_matrices
         self.features = features
         
@@ -8,6 +9,9 @@ class Graph():
         
         if (self.adjacency_matrices.size()[1] != self.features.size()[0]):
             raise Exception('The feature matrix must have as many rows as the adjacency matrix.')
+        
+    def get_name(self):
+        return self.name
                             
     def get_adjacency_matrices(self):
         return self.adjacency_matrices
@@ -23,3 +27,7 @@ class Graph():
     
     def get_entities_count(self):
         return self.adjacency_matrices.size()[1]
+    
+    def __str__(self):
+        adjacency_matrices_size = self.adjacency_matrices.size()
+        return '%s: \n- %d entities\n- %d relation\n- %d features\n' % (self.name, adjacency_matrices_size[1], adjacency_matrices_size[0], self.features.size()[1])

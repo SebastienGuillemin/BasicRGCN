@@ -39,7 +39,7 @@ class GraphBuilder():
         
         
 
-        return Graph(adjacency_matrices_training, features_matrice_training), Graph(adjacency_matrices_testing, features_matrice_testing)
+        return Graph('Training graph', adjacency_matrices_training, features_matrice_training), Graph('Testing graph', adjacency_matrices_testing, features_matrice_testing)
     
     def _split_adjacency_matrices(self, adjacency_matrices, split_index):
         size = adjacency_matrices.size()
@@ -57,8 +57,8 @@ class GraphBuilder():
         features_matrice_training = torch.empty(split_index, split_index)
         features_matrice_testing = torch.empty(size[0] - split_index, size[0] - split_index)
 
-        features_matrice_training= features_matrice[:split_index, :split_index]
-        features_matrice_testing = features_matrice[split_index:, split_index:]
+        features_matrice_training= features_matrice[:split_index, :]
+        features_matrice_testing = features_matrice[split_index:, :]
         
         return features_matrice_training, features_matrice_testing
     

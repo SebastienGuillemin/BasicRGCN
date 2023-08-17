@@ -9,7 +9,11 @@ with open("config/config.yml", "r") as stream:
         drug_types_list = config['drug_type'][0]
         relations_list = config['relations']
         target_relations_list = config['target_relations'][0]
-        network = config['network'][0]
+
+        network = {}
+        network['graph_db_host'] = config['network']['graph_db_host']
+        network['graph_db_port'] = config['network']['graph_db_port']
+
         
         if 'entities_limit' not in config:
             entities_limit = None
