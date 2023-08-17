@@ -21,7 +21,7 @@ def negative_sampling(original_data, split_ratio=0.7):
 def retrieve_data():
     data_loader = Dataloader()
     raw_data_relations = data_loader.load_relations_triplets(relations_list)
-    raw_data_entities = data_loader.load_instances("Echantillon")
+    raw_data_entities = data_loader.load_sample_by_drug_types(['Cannabis'])
     
     return raw_data_relations, raw_data_entities
     
@@ -42,7 +42,7 @@ def train(training_graph: Graph, model, loss_fn, optimizer, device):
     loss = loss_fn(pred, training_graph)
 
     # Backpropagation
-    loss.backward(retain_graph=True)
+    loss.backward()
     optimizer.step()
     optimizer.zero_grad()
 
@@ -72,12 +72,14 @@ if __name__ == '__main__':
     if (raw_data_relations == None):
         raise Exception('Impossible to retrieve data for relations.')
     else:
-        print('%d relations retrieved.' % (len(raw_data_relations)))
+        print('%d relation types retrieved :' % (len(raw_data_relations)))
+        for key, value in raw_data_relations.items():
+            print('     %s : %s triplets retrieved.' % (key, str(len(value))))
 
     if (raw_data_entities == None):
         raise Exception('Impossible to retrieve data for entities.')
     else:
-        print('%d entities retrieved.' % (len(raw_data_entities)))
+        print('%d entities retrieved.\n' % (len(raw_data_entities)))
 
 
     ## Create matrice
@@ -99,12 +101,12 @@ if __name__ == '__main__':
     )
     print(f"Using {device} device")
 
-    rgcn = BasicRGCN(2, 2, 2)
+    rgcn = BasicRGCN(in_features=2, out_features=2, relations_count=2)
     print(rgcn)
 
     loss_fn = Loss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
-    epochs = 10
+    epochs = 5
     for t in range(epochs):
 
         print(f"Epoch {t+1}\n-------------------------------")

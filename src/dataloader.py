@@ -23,7 +23,7 @@ class Dataloader () :
         query = '''
                 PREFIX : <%s>
                 SELECT * WHERE {
-                ?s :%s ?o .
+                    ?s :%s ?o .
                     FILTER(?s != ?o)
                 }
                 ''' % (self.prefix, relation_name)
