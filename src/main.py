@@ -1,5 +1,5 @@
 from model import *
-from config.config import *
+from config.config import relations_list, drug_type
 from graphbuilder import GraphBuilder
 from linkdataset import LinkDataset
 from dataloader import Dataloader
@@ -21,7 +21,7 @@ def negative_sampling(original_data, split_ratio=0.7):
 def retrieve_data():
     data_loader = Dataloader()
     raw_data_relations = data_loader.load_relations_triplets(relations_list)
-    raw_data_entities = data_loader.load_sample_by_drug_types(['Cannabis'])
+    raw_data_entities = data_loader.load_sample_by_drug_type(drug_type)
     
     return raw_data_relations, raw_data_entities
     
@@ -106,9 +106,8 @@ if __name__ == '__main__':
 
     loss_fn = Loss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
-    epochs = 5
+    epochs = 100
     for t in range(epochs):
-
         print(f"Epoch {t+1}\n-------------------------------")
         train(training_graph, rgcn, loss_fn, optimizer, device)
         test(testing_graph, rgcn, loss_fn)

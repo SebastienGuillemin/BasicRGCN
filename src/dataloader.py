@@ -1,5 +1,6 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
-from config.config import *
+from config.config import features, network
+import inspect
 
 class Dataloader () :
     def __init__(self) :
@@ -93,39 +94,43 @@ class Dataloader () :
         except Exception as e:
             print(e)
     
-    def load_sample_by_drug_types(self, drug_types, limit=None):
-        instances = []
-
-        for drug_type in drug_types:
-            instances += self._load_sample_by_drug_type(drug_type, limit)
-        
-        return instances
-
-
-    def _load_sample_by_drug_type (self, drug_type, limit=None):
+    def load_sample_by_drug_type(self, drug_type, limit=None):
         query = '''
-                PREFIX : <%s>
+                    PREFIX : <%s>
+                    SELECT ?e ''' %(self.prefix)
 
-                SELECT ?e
-                WHERE { 
-                    ?e a :Echantillon .
-                    ?e :typeDrogue '%s'
-                }
-                ''' % (self.prefix, drug_type)
+        for feature in features['Echantillon']:
+            query += '?%s ' % (feature)
+
+        query +='''
+                    WHERE { 
+                        ?e a :Echantillon    .
+                        ?e :typeDrogue '%s'    .''' % (drug_type)
+        
+        for feature in features['Echantillon']:
+            query += '''
+                        ?e :%s ?%s    .''' % (feature, feature)
+
+        query += '''
+                    }'''
         
         if limit != None:
             query += 'LIMIT %s' % (limit)
+
+        # print(inspect.cleandoc(query))
 
         self.sparql.setQuery(query)
 
         try:
             ret = self.sparql.queryAndConvert()
-            instances = []
+            instances = {}
 
             for r in ret['results']['bindings']:
-                instances.append(r['e']['value'],)
+                entity_name = r['e']['value']
+                instances[entity_name] = {}
+                for feature in features['Echantillon']:
+                    instances[entity_name][feature] = float(r[feature]['value'].replace(',', '.'))
 
             return instances
-
         except Exception as e:
             print(e)

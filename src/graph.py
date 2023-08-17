@@ -30,4 +30,4 @@ class Graph():
     
     def __str__(self):
         adjacency_matrices_size = self.adjacency_matrices.size()
-        return '%s: \n- %d entities\n- %d relation\n- %d features\n' % (self.name, adjacency_matrices_size[1], adjacency_matrices_size[0], self.features.size()[1])
+        return '%s: \n- %d entities\n- %d relations\n- %d features\n' % (self.name, adjacency_matrices_size[1], adjacency_matrices_size[0], self.features.size()[1])

@@ -1,9 +1,11 @@
 import torch
 from graph import Graph
 from math import floor
+from config.config import features as features_names
 
 class GraphBuilder():
     def __init__(self, entities, relations) :
+        # TODO : à adapter pour ne prendre en compte que les échantillons
         self.entities = entities
         self.relations = relations
         self.entities_count = len(self.entities)
@@ -33,11 +35,19 @@ class GraphBuilder():
         
         adjacency_matrices_training, adjacency_matrices_testing = self._split_adjacency_matrices(adjacency_matrices, split_index)            
         
-        # Construct features matrix        
-        features_matrice = torch.randn(self.entities_count, 2)
-        features_matrice_training, features_matrice_testing = self._split_features_matrice(features_matrice, split_index)            
-        
-        
+        # Construct features matrix
+        features_matrice = torch.empty(self.entities_count, len(self.entities[next(iter(self.entities))]))  # Size of the feature list of the first element in the entities dictionnary.
+
+        for entity in self.entities:
+            index = self.get_index(entity)
+            i = 0
+            for name in features_names['Echantillon']:
+                entity_features = self.entities[entity]
+                features_matrice[index][i] = entity_features[name]
+                i += 1
+
+        features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix
+        features_matrice_training, features_matrice_testing = self._split_features_matrice(features_matrice, split_index)        
 
         return Graph('Training graph', adjacency_matrices_training, features_matrice_training), Graph('Testing graph', adjacency_matrices_testing, features_matrice_testing)
     

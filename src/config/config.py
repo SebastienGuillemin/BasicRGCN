@@ -5,8 +5,8 @@ with open("config/config.yml", "r") as stream:
     try:
         config = yaml.safe_load(stream)
 
-        entities_list = config['entities'][0]
-        drug_types_list = config['drug_type'][0]
+        entities = config['entities']
+        drug_type = config['drug_type']
         relations_list = config['relations']
         target_relations_list = config['target_relations'][0]
 
@@ -14,18 +14,31 @@ with open("config/config.yml", "r") as stream:
         network['graph_db_host'] = config['network']['graph_db_host']
         network['graph_db_port'] = config['network']['graph_db_port']
 
-        
+        features = {}
+
+        for entity in entities:
+            features[entity] = config['features'][entity]
+
+
         if 'entities_limit' not in config:
             entities_limit = None
         else:
             entities_limit = config['entities_limit']
         
-        print('###### Config ######') 
-        print('    Entities list : ' + entities_list)
-        print('    Drug types : ' + drug_types_list)
-        print('    Traget realtions : ' + target_relations_list)
-        print('    Network configuration : ')
-        pprint(network)
-        print('####################\r\n') 
+        print('################## Config ##################') 
+        print('Entitie(s) name(s) and feature(s) : ')
+        
+        for entity, features_list in features.items():
+            print('    - %s : %s' % (entity, features_list))
+
+        print('\nDrug type : ' + drug_type)
+        
+        print('\nTraget relation(s) : ' + target_relations_list)
+        
+        print('\nNetwork configuration : ')
+        for parameter, value in network.items():
+            print('    -%s : %s' % (parameter, value))
+        
+        print('############################################\n') 
     except yaml.YAMLError as exc:
         print(exc)

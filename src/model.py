@@ -21,9 +21,7 @@ class ConvolutionalLayer(nn.Module):
         features = x.get_features()
         
         for i in range(0, self.relations_count):
-            temp = torch.matmul(adjacency_matrices[i], features)
-            temp = torch.matmul(temp, self.weight[i].t())
-            y += temp
+            y += torch.matmul(torch.matmul(adjacency_matrices[i], features), self.weight[i].t())
 
         return Graph(x.get_name(), x.get_adjacency_matrices(), y)
 
@@ -42,13 +40,54 @@ class DistMult (nn.Module):
     def forward(self, x: Graph):
         entity_count = x.get_entities_count()
         features = x.get_features()
+
         res = torch.empty(self.relations_count, entity_count, entity_count)
         
-        for i in range (1, self.relations_count):
+        for i in range (0, self.relations_count):
             res[i] = torch.matmul(torch.matmul(features, self.relations_matrices[i]), features.t())
 
+
         return res
-    
+
+
+class Sigmoid (nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, graph: Graph):
+        features = graph.get_features()
+        # print('torch.min(features).item()')
+        # print(torch.min(features).item())
+
+        # print('torch.max(features).item()')
+        # print(torch.max(features).item())
+
+        features = self.sigmoid(features)
+
+        # print('torch.min(features).item()')
+        # print(torch.min(features).item())
+
+        # print('torch.max(features).item()')
+        # print(torch.max(features).item())
+
+        graph.set_features(features)
+        return graph
+
+class Dropout (nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.dropout = nn.Dropout()
+
+    def forward(self, graph: Graph):
+        features = graph.get_features()
+        features = self.dropout(features)
+        graph.set_features(features)
+
+        return graph
+
+ 
+
 class BasicRGCN (nn.Module):
     def __init__(self, in_features, out_features, relations_count, layers_count=2):
         super().__init__()
@@ -57,7 +96,7 @@ class BasicRGCN (nn.Module):
 
         for i in range(layers_count):
             self.model.append(ConvolutionalLayer(relations_count, in_features, out_features))
-            # self.model.append(nn.ReLU())
+            self.model.append(Sigmoid())
             
         self.model.append(DistMult(out_features, relations_count))
 
@@ -72,7 +111,9 @@ class Loss(nn.Module):
         # pred = Matrice N * N probabilité de la relation entre les pairs de noeuds
         # y = liste d'exemples positifs et négatifs de lien entre des pairs de noeuds
         adjacency_matrixes = graph.get_adjacency_matrices()
-        loss = torch.mean((predicted_values - adjacency_matrixes)**2)
+
+        for i in range(0, graph.get_relations_count()): # Bypass self-loop matrix
+            loss = torch.mean((predicted_values[i] - adjacency_matrixes[i])**2)
         
         return loss
 
