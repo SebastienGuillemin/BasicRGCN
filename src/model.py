@@ -111,11 +111,12 @@ class Loss(nn.Module):
         # pred = Matrice N * N probabilité de la relation entre les pairs de noeuds
         # y = liste d'exemples positifs et négatifs de lien entre des pairs de noeuds
         adjacency_matrixes = graph.get_adjacency_matrices()
+        loss = torch.empty(graph.get_relations_count())
 
-        for i in range(0, graph.get_relations_count()): # Bypass self-loop matrix
-            loss = torch.mean((predicted_values[i] - adjacency_matrixes[i])**2)
+        for i in range(0, graph.get_relations_count()):
+            loss[i] = torch.mean((predicted_values[i] - adjacency_matrixes[i])**2)
         
-        return loss
+        return torch.mean(loss)
 
 
 if __name__ == '__main__':

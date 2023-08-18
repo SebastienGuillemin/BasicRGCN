@@ -1,0 +1,17 @@
+services:
+  my-pytorch:
+    container_name: pytorch
+    build: .
+    image: my-pytorch
+    volumes:
+      - ../src:/pytorch/
+    network_mode: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
