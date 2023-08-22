@@ -57,19 +57,7 @@ class Sigmoid (nn.Module):
 
     def forward(self, graph: Graph):
         features = graph.get_features()
-        # print('torch.min(features).item()')
-        # print(torch.min(features).item())
-
-        # print('torch.max(features).item()')
-        # print(torch.max(features).item())
-
         features = self.sigmoid(features)
-
-        # print('torch.min(features).item()')
-        # print(torch.min(features).item())
-
-        # print('torch.max(features).item()')
-        # print(torch.max(features).item())
 
         graph.set_features(features)
         return graph
@@ -85,8 +73,6 @@ class Dropout (nn.Module):
         graph.set_features(features)
 
         return graph
-
- 
 
 class BasicRGCN (nn.Module):
     def __init__(self, in_features, out_features, relations_count, layers_count=2):
@@ -108,24 +94,20 @@ class Loss(nn.Module):
         super().__init__()
         
     def forward (self, predicted_values, graph: Graph):
-        # pred = Matrice N * N probabilité de la relation entre les pairs de noeuds
-        # y = liste d'exemples positifs et négatifs de lien entre des pairs de noeuds
-        adjacency_matrixes = graph.get_adjacency_matrices()
+        entities_count = graph.get_entities_count()
+        adjacency_matrixes = graph.get_adjacency_matrices() # y
         loss = torch.empty(graph.get_relations_count())
+        ones = torch.ones(entities_count)
+        zeros = torch.zeros(entities_count)
 
         for i in range(0, graph.get_relations_count()):
-            loss[i] = torch.mean((predicted_values[i] - adjacency_matrixes[i])**2)
+            # positive = torch.count_nonzero(adjacency_matrixes[i]).item()
+            # negative = entities_count ** 2 - positive
+            # print(positive, negative)
+            a =  torch.mul(adjacency_matrixes[i], torch.log(torch.sigmoid(predicted_values[i])))
+            b = torch.mul(torch.sub(ones, adjacency_matrixes[i]), torch.log(torch.sub(ones, torch.sigmoid(predicted_values[i]))))
+
+            # loss[i] = torch.mean((1 / ((1 + negative) * positive)) * torch.sub(zeros,torch.add(a, b)))
+            loss[i] = torch.mean(torch.sub(zeros,torch.add(a, b)) * 100)
         
         return torch.mean(loss)
-
-
-if __name__ == '__main__':
-    # loader = Dataloader ()
-    # samples = sorted(loader.load_sample_by_drug_types(drug_types_list, entities_limit))
-    # relations = loader.load_relations_triples(relations_list, entities_limit)
-
-    # builder = MatricesBuilder(samples, relations)
-    # matrices = builder.construct_matrices()
-
-    # rgcn = BasicRGCN(matrices, 8, 4)
-    d = DistMult(4, 5)

@@ -3,6 +3,9 @@ from config.config import relations_list, drug_type
 from graphbuilder import GraphBuilder
 from linkdataset import LinkDataset
 from dataloader import Dataloader
+import matplotlib.pyplot as plt
+
+trainig_losses = []
 
 def negative_sampling(original_data, split_ratio=0.7):
     # TODO : implement negative sampling
@@ -47,7 +50,8 @@ def train(training_graph: Graph, model, loss_fn, optimizer, device):
     optimizer.zero_grad()
 
     loss = loss.item()
-    print(f"loss: {loss:>7f}")
+    trainig_losses.append(loss)
+    print(f"loss: {loss:>7f}%")
 
 def test(testing_graph: Graph, model, loss_fn):
     # size = len(test_dataloader.dataset)
@@ -61,7 +65,7 @@ def test(testing_graph: Graph, model, loss_fn):
     # test_loss /= num_batches
     # correct /= size
     # print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
-    print(f"Test Error: \nAvg loss: {test_loss:>8f} \n")
+    print(f"Test Error: Avg loss: {test_loss:>8f}% \n")
 
 
 if __name__ == '__main__':
@@ -115,3 +119,5 @@ if __name__ == '__main__':
 
     torch.save(rgcn.state_dict(), "model.pth")
     print("Saved PyTorch Model State to model.pth")
+
+    plt.plot(trainig_losses)
