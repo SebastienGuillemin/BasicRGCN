@@ -10,4 +10,4 @@ RUN mkdir /pytorch
 
 WORKDIR /pytorch
 
-CMD python main.py
+CMD python run.py

@@ -33,8 +33,6 @@ class Dataloader () :
             query += 'LIMIT %s' % (limit)
         
         self.sparql.setQuery(query)
-        
-        # print(query)
 
         try:
             ret = self.sparql.queryAndConvert()
@@ -48,7 +46,7 @@ class Dataloader () :
         except Exception as e:
                 print(e)
 
-    def count_instances (self, class_name):
+    def count_entities (self, class_name):
         query = '''
                 PREFIX : <%s>
 
@@ -67,7 +65,7 @@ class Dataloader () :
         except Exception as e:
             print(e)
 
-    def load_instances (self, class_name, limit=None):
+    def load_entities (self, class_name, limit=None):
         query = '''
                 PREFIX : <%s>
 
@@ -84,12 +82,12 @@ class Dataloader () :
 
         try:
             ret = self.sparql.queryAndConvert()
-            instances = []
+            entities = []
 
             for r in ret['results']['bindings']:
-                instances.append(r['i']['value'])
+                entities.append(r['i']['value'])
 
-            return instances
+            return entities
 
         except Exception as e:
             print(e)
@@ -117,20 +115,83 @@ class Dataloader () :
         if limit != None:
             query += 'LIMIT %s' % (limit)
 
-        # print(inspect.cleandoc(query))
-
         self.sparql.setQuery(query)
 
         try:
             ret = self.sparql.queryAndConvert()
-            instances = {}
+            entities = {}
 
             for r in ret['results']['bindings']:
                 entity_name = r['e']['value']
-                instances[entity_name] = {}
+                entities[entity_name] = {}
                 for feature in features['Echantillon']:
-                    instances[entity_name][feature] = float(r[feature]['value'].replace(',', '.'))
+                    entities[entity_name][feature] = float(r[feature]['value'].replace(',', '.'))
 
-            return instances
+            return entities
         except Exception as e:
             print(e)
+
+    def load_sample_neighborhood (self, entity_name, features):
+        query_relations = '''
+                PREFIX : <%s>
+
+                SELECT *
+                WHERE { 
+                    ?s :estProcheDe ?o
+                    VALUES ?s {:%s}	.
+                    FILTER(?s != ?o)
+                }
+                ''' % (self.prefix, entity_name)
+        
+        self.sparql.setQuery(query_relations)
+        
+        triplets = {}
+        triplets['estProcheDe'] = []
+        entities = {}
+        entities[self.prefix + entity_name] = {}
+        try:
+            ret = self.sparql.queryAndConvert()
+
+            for r in ret['results']['bindings']:
+                triplets['estProcheDe'].append((r['s']['value'], 'estProcheDe', r['o']['value'], 1))
+                entities[r['o']['value']] = {}
+
+        except Exception as e:
+            print(e)
+
+        query_entities = '''
+                    PREFIX : <%s>
+                    SELECT ?e ''' %(self.prefix)
+
+        for feature in features:
+            query_entities += '?%s ' % (feature)
+
+        query_entities +='''
+                    WHERE { 
+                        ?e a :Echantillon    .'''
+        
+        for feature in features:
+            query_entities += '''
+                        ?e :%s ?%s    .''' % (feature, feature)
+
+        query_entities += '''
+                    VALUES(?e){'''
+        
+        for entities_name, _ in entities.items():
+            query_entities += '(<%s>)' % (entities_name)
+        
+        query_entities += '}}'
+
+        self.sparql.setQuery(query_entities)
+        try:
+            ret = self.sparql.queryAndConvert()
+
+            for r in ret['results']['bindings']:
+                entity_name = r['e']['value']
+                for feature in features:
+                        entities[entity_name][feature]= float(r[feature]['value'].replace(',', '.'))
+
+        except Exception as e:
+            print('Error : %s' % (e))
+
+        return triplets, entities

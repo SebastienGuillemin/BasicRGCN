@@ -29,5 +29,12 @@ class Graph():
         return self.adjacency_matrices.size()[1]
     
     def __str__(self):
+        print(self.adjacency_matrices)
+        print(self.features)
+
         adjacency_matrices_size = self.adjacency_matrices.size()
         return '%s: \n- %d entities\n- %d relations\n- %d features\n' % (self.name, adjacency_matrices_size[1], adjacency_matrices_size[0], self.features.size()[1])
+    
+    def to(self, device):
+        self.adjacency_matrices = self.adjacency_matrices.to(device)
+        self.features = self.features.to(device)

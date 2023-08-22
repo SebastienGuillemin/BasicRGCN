@@ -17,7 +17,7 @@ class ConvolutionalLayer(nn.Module):
     def forward(self, x: Graph):
         entities_count = x.get_entities_count()
         adjacency_matrices = x.get_adjacency_matrices()
-        y = torch.zeros(entities_count, self.out_features_count)
+        y = torch.zeros(entities_count, self.out_features_count).to(self.weight.device)
         features = x.get_features()
         
         for i in range(0, self.relations_count):
@@ -45,7 +45,6 @@ class DistMult (nn.Module):
         
         for i in range (0, self.relations_count):
             res[i] = torch.matmul(torch.matmul(features, self.relations_matrices[i]), features.t())
-
 
         return res
 
@@ -86,7 +85,7 @@ class BasicRGCN (nn.Module):
             
         self.model.append(DistMult(out_features, relations_count))
 
-    def forward(self, graph):
+    def forward(self, graph: Graph):
         return self.model(graph)
     
 class Loss(nn.Module):
@@ -96,16 +95,17 @@ class Loss(nn.Module):
     def forward (self, predicted_values, graph: Graph):
         entities_count = graph.get_entities_count()
         adjacency_matrixes = graph.get_adjacency_matrices() # y
-        loss = torch.empty(graph.get_relations_count())
-        ones = torch.ones(entities_count)
-        zeros = torch.zeros(entities_count)
+        device = adjacency_matrixes.device
+        loss = torch.empty(graph.get_relations_count()).to(device)
+        ones = torch.ones(entities_count).to(device)
+        zeros = torch.zeros(entities_count).to(device)
 
         for i in range(0, graph.get_relations_count()):
             # positive = torch.count_nonzero(adjacency_matrixes[i]).item()
             # negative = entities_count ** 2 - positive
             # print(positive, negative)
-            a =  torch.mul(adjacency_matrixes[i], torch.log(torch.sigmoid(predicted_values[i])))
-            b = torch.mul(torch.sub(ones, adjacency_matrixes[i]), torch.log(torch.sub(ones, torch.sigmoid(predicted_values[i]))))
+            a =  torch.mul(adjacency_matrixes[i], torch.log(torch.sigmoid(predicted_values[i]).to(device)))
+            b = torch.mul(torch.sub(ones, adjacency_matrixes[i]), torch.log(torch.sub(ones, torch.sigmoid(predicted_values[i]).to(device))))
 
             # loss[i] = torch.mean((1 / ((1 + negative) * positive)) * torch.sub(zeros,torch.add(a, b)))
             loss[i] = torch.mean(torch.sub(zeros,torch.add(a, b)) * 100)
