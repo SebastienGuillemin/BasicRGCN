@@ -1,4 +1,5 @@
 # docker/
 src/data/
 src/__pycache__/
+src/config/__pycache__/
 start-docker.bat

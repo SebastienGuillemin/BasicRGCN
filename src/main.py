@@ -110,14 +110,28 @@ if __name__ == '__main__':
 
     loss_fn = Loss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
-    epochs = 100
-    for t in range(epochs):
-        print(f"Epoch {t+1}\n-------------------------------")
+    
+    loss_gain = 100
+    epoch = 1
+    while loss_gain > 0.01:
+        print(f"Epoch {epoch}\n-------------------------------")
         train(training_graph, rgcn, loss_fn, optimizer, device)
         test(testing_graph, rgcn, loss_fn)
+
+        if len(trainig_losses) == 1:
+            loss_gain = trainig_losses[0]
+        
+        else:
+            epoch = len(trainig_losses)
+            loss_gain = trainig_losses[epoch - 2] - trainig_losses[epoch - 1]
+
     print("Done!")
 
     torch.save(rgcn.state_dict(), "model.pth")
     print("Saved PyTorch Model State to model.pth")
 
     plt.plot(trainig_losses)
+    plt.title("Loss evolution")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss (%)")
+    plt.savefig('loss.png')
