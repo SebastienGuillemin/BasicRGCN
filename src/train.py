@@ -59,14 +59,14 @@ if __name__ == '__main__':
     if (raw_data_relations == None):
         raise Exception('Impossible to retrieve data for relations.')
     else:
-        print('%d relation types retrieved :' % (len(raw_data_relations)))
+        print('-> %d relation types retrieved :' % (len(raw_data_relations)))
         for key, value in raw_data_relations.items():
             print('     %s : %s triplets retrieved.' % (key, str(len(value))))
 
     if (raw_data_entities == None):
         raise Exception('Impossible to retrieve data for entities.')
     else:
-        print('%d entities retrieved.\n' % (len(raw_data_entities)))
+        print('\n-> %d entities retrieved.\n' % (len(raw_data_entities)))
 
 
     ## Create graph
@@ -77,6 +77,7 @@ if __name__ == '__main__':
 
     print(training_graph)
     print(testing_graph)
+    exit()
 
     rgcn = BasicRGCN(in_features=2, out_features=2, relations_count=2).to(device)
     print(rgcn)
