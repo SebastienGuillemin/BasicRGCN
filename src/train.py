@@ -19,8 +19,9 @@ def train(training_graph: Graph, model, loss_fn, optimizer, device):
     model.train()
     training_graph.to(device)
     # Compute prediction error
-    pred = model(training_graph)
-    loss = loss_fn(pred, training_graph).to(device)
+    pred = model(training_graph).to(device)
+
+    loss = loss_fn(pred, training_graph.get_adjacency_matrices())
 
     # Backpropagation
     loss.backward()
@@ -35,8 +36,8 @@ def test(testing_graph: Graph, model, loss_fn):
     model.eval()
     test_loss = 0
     with torch.no_grad():
-        pred = model(testing_graph)
-        test_loss += loss_fn(pred, testing_graph).item()
+        pred = model(testing_graph).to(device)
+        test_loss += loss_fn(pred, testing_graph.get_adjacency_matrices()).item()
 
     print(f"Test loss: {test_loss:>8f}% \n")
 
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     rgcn = BasicRGCN(in_features=2, out_features=2, relations_count=2).to(device)
     print(rgcn)
 
-    loss_fn = CustomLoss()
+    loss_fn = nn.MSELoss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
     
     for epoch in range (1, 100):
