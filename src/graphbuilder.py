@@ -6,15 +6,15 @@ from config.config import features as features_names
 class GraphBuilder():
     def __init__(self, entities, relations) :
         # TODO : à adapter pour ne prendre en compte que les échantillons
-        self.entities = entities
         self.relations = relations
-        self.entities_count = len(self.entities)
-        self.relations_count = len(self.relations)
+        self.entities = entities
         self.indexes_cache = {}
         self.relation_name_mapping = {}
+        
+        self._compute_indexes()
 
-        self._compute_index()
-        self._compute_relation_name_mapping()
+        self.entities_count = len(self.indexes_cache)
+        self.relations_count = len(self.relations)
 
     def construct_graph(self):        
         # Construct adjacency matrices
@@ -106,9 +106,23 @@ class GraphBuilder():
         
         return features_matrice_training, features_matrice_testing
     
-    def _compute_index(self):
-        for index, entity in enumerate(self.entities):
-            self.indexes_cache[entity] = index
+    def _compute_indexes(self):
+        cpt_entity = 0
+        cpt_relation = 1
+        for name in self.relations:
+            for (entity_1, relation, entity_2, _) in self.relations[name]:
+                if entity_1 not in self.indexes_cache:
+                    self.indexes_cache[entity_1] = cpt_entity
+                    cpt_entity += 1
+                
+                if entity_2 not in self.indexes_cache:
+                    self.indexes_cache[entity_2] = cpt_entity
+                    cpt_entity += 1
+
+                if relation not in self.relation_name_mapping:
+                    self.relation_name_mapping[relation] = cpt_relation
+                    cpt_relation += 1
+
         
     def get_index (self, entity):
         if (entity in self.indexes_cache):   
@@ -116,10 +130,6 @@ class GraphBuilder():
             return index
 
         return None
-    
-    def _compute_relation_name_mapping(self):
-        for index, relation in enumerate(self.relations):
-            self.relation_name_mapping[relation] = index + 1
 
     def get_relation_name_mapping (self, relation):
         if (relation in self.relation_name_mapping):   
