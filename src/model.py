@@ -116,7 +116,8 @@ class CustomLoss(nn.Module):
         positive = torch.count_nonzero(adjacency_matrixes).item()
         negative = (entities_count**2) * graph.get_relations_count() - positive
         
-        return (-1 / ((1 + negative) * positive)) * loss.sum()
+        # return (-1 / ((1 + negative) * positive)) * loss.sum()
+        return torch.mean(-1 * loss)
 
 class MSE(nn.Module):
     def __init__(self):
