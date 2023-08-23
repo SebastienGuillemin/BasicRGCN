@@ -52,7 +52,6 @@ class GraphBuilder():
         # Construct adjacency matrices
         adjacency_matrices = torch.zeros(self.relations_count + 1, self.entities_count, self.entities_count)
 
-        adjacency_matrices[0] = torch.eye(self.entities_count)  # Self loop matrix.
 
         for relation_name, triples in self.relations.items() :
             i = self.get_relation_name_mapping(relation_name)
@@ -62,8 +61,8 @@ class GraphBuilder():
                 
                 if (indexe_1 != None and indexe2 != None):
                     adjacency_matrices[i][indexe_1][indexe2] = 1
-        
-        adjacency_matrices_training, adjacency_matrices_testing = self._split_adjacency_matrices(adjacency_matrices, split_index)
+
+        adjacency_matrices[0] = torch.eye(self.entities_count)  # Self loop matrix.
         
         # Construct features matrix
         features_matrice = torch.empty(self.entities_count, len(self.entities[next(iter(self.entities))]))  # Size of the feature list of the first element in the entities dictionnary.
@@ -77,6 +76,11 @@ class GraphBuilder():
                 i += 1
 
         features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix
+
+
+
+        # Split matrices
+        adjacency_matrices_training, adjacency_matrices_testing = self._split_adjacency_matrices(adjacency_matrices, split_index)
         features_matrice_training, features_matrice_testing = self._split_features_matrice(features_matrice, split_index)  
 
         return Graph('Training graph', adjacency_matrices_training, features_matrice_training), Graph('Testing graph', adjacency_matrices_testing, features_matrice_testing)
@@ -122,3 +126,10 @@ class GraphBuilder():
             return relation_name_mapping
 
         return None
+    
+    def get_relation_entities_index(self, relation_name, entity_1, entity_2):
+        index_1 = self.get_index(entity_1)
+        index_2 = self.get_index(entity_2)        
+        relation_index = self.get_relation_name_mapping(relation_name)
+
+        return relation_index, index_1, index_2

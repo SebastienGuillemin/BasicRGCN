@@ -1,13 +1,14 @@
-from SPARQLWrapper import SPARQLWrapper, JSON
+from SPARQLWrapper import SPARQLWrapper, JSON, RDFXML
 from config.config import features, network
-import inspect
+from rdflib import Graph
+
+prefix = 'http://www.stups.fr/ontologies/2023/stups/'
 
 class Dataloader () :
     def __init__(self) :
         self.sparql = SPARQLWrapper('http://%s:7200/repositories/STUPS' % (network['graph_db_host']))
         self.sparql.setReturnFormat(JSON)
         
-        self.prefix = 'http://www.stups.fr/ontologies/2023/stups/'
 
     def load_relations_triplets(self, relations_names, limit=None) :
         triplets = {}
@@ -27,7 +28,7 @@ class Dataloader () :
                     ?s :%s ?o .
                     FILTER(?s != ?o)
                 }
-                ''' % (self.prefix, relation_name)
+                ''' % (prefix, relation_name)
         
         if limit != None:
             query += 'LIMIT %s' % (limit)
@@ -54,7 +55,7 @@ class Dataloader () :
                 WHERE { 
                     ?e a :%s
                 }
-                ''' % (self.prefix, class_name)
+                ''' % (prefix, class_name)
     
         self.sparql.setQuery(query)
 
@@ -73,7 +74,7 @@ class Dataloader () :
                 WHERE { 
                     ?i a :%s
                 }
-                ''' % (self.prefix, class_name)
+                ''' % (prefix, class_name)
         
         if limit != None:
             query += 'LIMIT %s' % (limit)
@@ -95,7 +96,7 @@ class Dataloader () :
     def load_sample_by_drug_type(self, drug_type, limit=None):
         query = '''
                     PREFIX : <%s>
-                    SELECT ?e ''' %(self.prefix)
+                    SELECT ?e ''' %(prefix)
 
         for feature in features['Echantillon']:
             query += '?%s ' % (feature)
@@ -132,36 +133,53 @@ class Dataloader () :
             print(e)
 
     def load_sample_neighborhood (self, entity_name, features):
+        self.sparql.setReturnFormat(RDFXML)
         query_relations = '''
                 PREFIX : <%s>
 
-                SELECT *
-                WHERE { 
-                    ?s :estProcheDe ?o
-                    VALUES ?s {:%s}	.
-                    FILTER(?s != ?o)
+                CONSTRUCT {
+                    ?s1 ?p1 ?o1 .
+                    ?s2 ?p1 ?o2 .
                 }
-                ''' % (self.prefix, entity_name)
+                WHERE {
+                    ?s1 ?p1 ?o1	.
+                    FILTER (?s1 = :%s && ?p1 = :estProcheDe && ?s1 != ?o1)	.
+                    BIND (?o1 as ?s2)	.
+                    ?s2 ?p1 ?o2	.
+                    FILTER (?o2 != ?s2)	.
+                }
+                ''' % (prefix, entity_name)
         
         self.sparql.setQuery(query_relations)
         
         triplets = {}
         triplets['estProcheDe'] = []
         entities = {}
-        entities[self.prefix + entity_name] = {}
+        ret = None
+
         try:
             ret = self.sparql.queryAndConvert()
-
-            for r in ret['results']['bindings']:
-                triplets['estProcheDe'].append((r['s']['value'], 'estProcheDe', r['o']['value'], 1))
-                entities[r['o']['value']] = {}
-
         except Exception as e:
-            print(e)
+            print('Error : %s' % (e))
+            print(query_relations)
+            exit()
 
+        for t in ret.triples((None,None,None)):
+            entity_1 = t[0].n3()
+            entity_2 = t[2].n3()
+
+            ## Removing '<' and '>' characters.
+            entity_1 = entity_1[1:len(entity_1) - 1]
+            entity_2 = entity_2[1:len(entity_2) - 1]
+
+            triplets['estProcheDe'].append((entity_1, 'estProcheDe', entity_2, 1))
+            if entity_1 not in entities:
+                entities[entity_1] = {}
+
+        self.sparql.setReturnFormat(JSON)
         query_entities = '''
                     PREFIX : <%s>
-                    SELECT ?e ''' %(self.prefix)
+                    SELECT ?e ''' %(prefix)
 
         for feature in features:
             query_entities += '?%s ' % (feature)
@@ -177,21 +195,25 @@ class Dataloader () :
         query_entities += '''
                     VALUES(?e){'''
         
+        
         for entities_name, _ in entities.items():
             query_entities += '(<%s>)' % (entities_name)
         
         query_entities += '}}'
 
         self.sparql.setQuery(query_entities)
+
+        ret = None
         try:
             ret = self.sparql.queryAndConvert()
-
-            for r in ret['results']['bindings']:
-                entity_name = r['e']['value']
-                for feature in features:
-                        entities[entity_name][feature]= float(r[feature]['value'].replace(',', '.'))
-
         except Exception as e:
             print('Error : %s' % (e))
+            print(query_entities)
+            exit()
+
+        for r in ret['results']['bindings']:
+            entity_name = r['e']['value']
+            for feature in features:
+                    entities[entity_name][feature]= float(r[feature]['value'].replace(',', '.'))
 
         return triplets, entities

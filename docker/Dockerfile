@@ -1,5 +1,7 @@
 FROM pytorch/pytorch
 
+ARG ARG PORT
+
 RUN pip install torchvision
 RUN pip install SPARQLWrapper
 RUN pip install matplotlib
@@ -10,4 +12,4 @@ RUN mkdir /pytorch
 
 WORKDIR /pytorch
 
-CMD python run.py
+CMD python ${FILE_NAME}

@@ -3,6 +3,7 @@ from config.config import relations_list, drug_type
 from graphbuilder import GraphBuilder
 from dataloader import Dataloader
 import matplotlib.pyplot as plt
+from torch import max, min
 
 trainig_losses = []
 
@@ -68,7 +69,7 @@ if __name__ == '__main__':
         print('%d entities retrieved.\n' % (len(raw_data_entities)))
 
 
-    ## Create matrices
+    ## Create graph
     graph_builder = GraphBuilder(raw_data_entities, raw_data_relations)
     training_graph, testing_graph = graph_builder.construct_graphs()
     training_graph.to(device)
@@ -80,22 +81,13 @@ if __name__ == '__main__':
     rgcn = BasicRGCN(in_features=2, out_features=2, relations_count=2).to(device)
     print(rgcn)
 
-    loss_fn = Loss()
+    loss_fn = CustomLoss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
     
-    loss_gain = 100
-    epoch = 1
-    while loss_gain > 0.01:
+    for epoch in range (1, 100):
         print(f"Epoch {epoch}\n-------------------------------")
         train(training_graph, rgcn, loss_fn, optimizer, device)
         test(testing_graph, rgcn, loss_fn)
-
-        if len(trainig_losses) == 1:
-            loss_gain = trainig_losses[0]
-        
-        else:
-            epoch = len(trainig_losses)
-            loss_gain = trainig_losses[epoch - 2] - trainig_losses[epoch - 1]
 
     print("Done!")
 
