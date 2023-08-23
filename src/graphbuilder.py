@@ -61,7 +61,6 @@ class GraphBuilder():
                 
                 if (indexe_1 != None and indexe2 != None):
                     adjacency_matrices[i][indexe_1][indexe2] = 1
-                    count += 1
 
         # Construct features matrix
         features_matrice = torch.empty(self.entities_count, len(self.entities[next(iter(self.entities))]))  # Size of the feature list of the first element in the entities dictionnary.

@@ -77,7 +77,6 @@ if __name__ == '__main__':
 
     print(training_graph)
     print(testing_graph)
-    exit()
 
     rgcn = BasicRGCN(in_features=2, out_features=2, relations_count=2).to(device)
     print(rgcn)
