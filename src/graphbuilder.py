@@ -109,6 +109,7 @@ class GraphBuilder():
     def _compute_index(self):
         for index, entity in enumerate(self.entities):
             self.indexes_cache[entity] = index
+        
     def get_index (self, entity):
         if (entity in self.indexes_cache):   
             index = self.indexes_cache.get(entity)
