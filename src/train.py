@@ -84,7 +84,7 @@ if __name__ == '__main__':
     loss_fn = CustomLoss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
     
-    for epoch in range (1, 100):
+    for epoch in range (1, 2):
         print(f"Epoch {epoch}\n-------------------------------")
         train(training_graph, rgcn, loss_fn, optimizer, device)
         test(testing_graph, rgcn, loss_fn)
