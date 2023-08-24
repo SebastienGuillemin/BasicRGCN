@@ -16,35 +16,35 @@ class GraphBuilder():
         self.entities_count = len(self.indexes_cache)
         self.relations_count = len(self.relations)
 
-    # def construct_graph(self):        
-    #     # Construct adjacency matrices
-    #     adjacency_matrices = torch.zeros(self.relations_count + 1, self.entities_count, self.entities_count)
+    def construct_graph(self):        
+        # Construct adjacency matrices
+        adjacency_matrices = torch.zeros(self.relations_count + 1, self.entities_count, self.entities_count)
 
-    #     adjacency_matrices[0] = torch.eye(self.entities_count)  # Self loop matrix.
+        adjacency_matrices[0] = torch.eye(self.entities_count)  # Self loop matrix.
 
-    #     for relation_name, triples in self.relations.items() :
-    #         i = self.get_relation_name_mapping(relation_name)
-    #         for triple in triples:
-    #             indexe_1 = self.get_index(triple[0])
-    #             indexe2 = self.get_index(triple[2])
+        for relation_name, triples in self.relations.items() :
+            i = self.get_relation_name_mapping(relation_name)
+            for triple in triples:
+                indexe_1 = self.get_index(triple[0])
+                indexe2 = self.get_index(triple[2])
                 
-    #             if (indexe_1 != None and indexe2 != None):
-    #                 adjacency_matrices[i][indexe_1][indexe2] = 1   
+                if (indexe_1 != None and indexe2 != None):
+                    adjacency_matrices[i][indexe_1][indexe2] = 1   
         
-    #     # Construct features matrix
-    #     features_matrice = torch.empty(self.entities_count, len(self.entities[next(iter(self.entities))]))  # Size of the feature list of the first element in the entities dictionnary.
+        # Construct features matrix
+        features_matrice = torch.empty(self.entities_count, len(self.entities[next(iter(self.entities))]))  # Size of the feature list of the first element in the entities dictionnary.
 
-    #     for entity in self.entities:
-    #         index = self.get_index(entity)
-    #         i = 0
-    #         for name in features_names['Echantillon']:
-    #             entity_features = self.entities[entity]
-    #             features_matrice[index][i] = entity_features[name]
-    #             i += 1
+        for entity in self.entities:
+            index = self.get_index(entity)
+            i = 0
+            for name in features_names['Echantillon']:
+                entity_features = self.entities[entity]
+                features_matrice[index][i] = entity_features[name]
+                i += 1
 
-    #     features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix     
+        features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix     
 
-    #     return Graph('Graph', adjacency_matrices, features_matrice)
+        return Graph('Graph', adjacency_matrices, features_matrice)
 
     def construct_graphs(self, split_ratio=0.7):
         split_index = floor(self.entities_count * split_ratio)        
@@ -74,7 +74,7 @@ class GraphBuilder():
                 features_matrice[index][i] = entity_features[name]
                 i += 1
 
-        features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix
+        # features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix
 
         # Split matrices
         adjacency_matrices_training, adjacency_matrices_testing = self._split_adjacency_matrices(adjacency_matrices, split_index)
