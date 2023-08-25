@@ -69,7 +69,6 @@ class DistMult (nn.Module):
 
         return res
 
-
 class GraphReLU (nn.Module):
     def __init__(self):
         super().__init__()
