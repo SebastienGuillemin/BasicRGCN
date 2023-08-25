@@ -15,7 +15,7 @@ features:
     - masse
 
 network:
-  graph_db_host: 127.0.0.1
+  graph_db_host: host.docker.internal
   graph_db_port: 7200
 
 # entities_limit: 1

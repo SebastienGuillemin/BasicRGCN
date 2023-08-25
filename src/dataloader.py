@@ -6,7 +6,7 @@ prefix = 'http://www.stups.fr/ontologies/2023/stups/'
 
 class Dataloader () :
     def __init__(self) :
-        self.sparql = SPARQLWrapper('http://%s:7200/repositories/STUPS' % (network['graph_db_host']))
+        self.sparql = SPARQLWrapper('http://%s:%s/repositories/STUPS' % (network['graph_db_host'], network['graph_db_port']))
         self.sparql.setReturnFormat(JSON)
         
 
@@ -117,6 +117,8 @@ class Dataloader () :
             query += 'LIMIT %s' % (limit)
 
         self.sparql.setQuery(query)
+        
+        print(query)
 
         try:
             ret = self.sparql.queryAndConvert()

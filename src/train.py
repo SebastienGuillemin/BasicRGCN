@@ -12,15 +12,39 @@ def retrieve_data():
     raw_data_relations = data_loader.load_relations_triplets(relations_list)
     raw_data_entities = data_loader.load_sample_by_drug_type(drug_type)
     
+    if (raw_data_relations == None):
+        raise Exception('Impossible to retrieve data for relations.')
+    else:
+        print('-> %d relation types retrieved :' % (len(raw_data_relations)))
+        for key, value in raw_data_relations.items():
+            print('     %s : %s triplets retrieved.' % (key, str(len(value))))
+
+    if (raw_data_entities == None):
+        raise Exception('Impossible to retrieve data for entities.')
+    else:
+        print('\n-> %d entities retrieved.\n' % (len(raw_data_entities)))
+    
     return raw_data_relations, raw_data_entities
+
+def construct_graph():
+    ## Retrieve data
+    raw_data_relations, raw_data_entities = retrieve_data()
+
+    ## Create graph
+    graph_builder = GraphBuilder(raw_data_entities, raw_data_relations)
+    training_graph, testing_graph = graph_builder.construct_graphs()
+    training_graph.to(device)
+    testing_graph.to(device)
+    
+    return training_graph, testing_graph
     
 
 def train(training_graph: Graph, model, loss_fn, optimizer, device):
     model.train()
     training_graph.to(device)
+    
     # Compute prediction error
     pred = model(training_graph).to(device)
-
     loss = loss_fn(pred, training_graph)
 
     # Backpropagation
@@ -48,33 +72,12 @@ if __name__ == '__main__':
     device = (
         "cuda"
         if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
         else "cpu"
     )
     print(f"Using {device} device")
 
-    ## Retrieve data
-    raw_data_relations, raw_data_entities = retrieve_data()
-
-    if (raw_data_relations == None):
-        raise Exception('Impossible to retrieve data for relations.')
-    else:
-        print('-> %d relation types retrieved :' % (len(raw_data_relations)))
-        for key, value in raw_data_relations.items():
-            print('     %s : %s triplets retrieved.' % (key, str(len(value))))
-
-    if (raw_data_entities == None):
-        raise Exception('Impossible to retrieve data for entities.')
-    else:
-        print('\n-> %d entities retrieved.\n' % (len(raw_data_entities)))
-
-
-    ## Create graph
-    graph_builder = GraphBuilder(raw_data_entities, raw_data_relations)
-    training_graph, testing_graph = graph_builder.construct_graphs()
-    training_graph.to(device)
-    testing_graph.to(device)
+    ## Construct graphs
+    training_graph, testing_graph = construct_graph()
 
     print(training_graph)
     print(testing_graph)
@@ -83,7 +86,7 @@ if __name__ == '__main__':
     print(rgcn)
 
     loss_fn = CustomLoss()
-    optimizer = torch.optim.SGD(rgcn.parameters(), lr=1e-2)
+    optimizer = torch.optim.SGD(rgcn.parameters(), lr=0.001)
     
     for epoch in range (1, 100):
         print(f"Epoch {epoch}\n-------------------------------")
