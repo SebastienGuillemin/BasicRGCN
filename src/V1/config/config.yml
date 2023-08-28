@@ -1,0 +1,21 @@
+entities:
+  - Echantillon
+
+drug_type: Cannabis
+
+relations:
+  - estProcheDe
+
+target_relations:
+  - estProcheDe
+
+features:
+  Echantillon:
+    - epaisseur
+    - masse
+
+network:
+  graph_db_host: host.docker.internal
+  graph_db_port: 7200
+
+# entities_limit: 1

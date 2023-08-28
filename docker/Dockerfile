@@ -12,4 +12,4 @@ RUN mkdir /pytorch
 
 WORKDIR /pytorch
 
-CMD python ${FILE_NAME}
+CMD python ${VERSION}/${FILE_NAME}
