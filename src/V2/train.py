@@ -8,8 +8,8 @@ from torch.utils.data import DataLoader, random_split
 
 training_losses = []
 testing_accuracy = []
-batch_size = 100
-epoch_number = 5
+batch_size = 50
+epoch_number = 50
 
 def retrieve_data():
     repository = Repository()
@@ -66,8 +66,6 @@ def train(train_dataloader, model, loss_fn, optimizer, device):
         y = y.to(device)
         # Compute prediction error
         pred = model(x).to(device)
-        print(pred.size())
-        print(torch.max(pred), torch.min(pred))
         loss = loss_fn(pred, y)
 
         # Backpropagation
@@ -122,10 +120,10 @@ if __name__ == '__main__':
     ## Construct Dataset
     relations_dataset = create_dataset(data_relations, data_manager, negative_samples_count=800)
 
-    rgcn = BasicRGCN(graph=graph, in_features=2, out_features=2, data_manager=data_manager, layer_count=2).to(device)
+    rgcn = BasicRGCN(graph=graph, in_features=2, out_features=2, data_manager=data_manager, layer_count=5).to(device)
     print(rgcn, '\n')
 
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.MSELoss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=0.1)
     
     for epoch in range (epoch_number):
