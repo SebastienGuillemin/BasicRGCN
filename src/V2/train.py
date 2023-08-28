@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 from relationdataset import RelationDataset
 from torch.utils.data import DataLoader, random_split
 
-trainig_losses = []
-batch_size = 200
-epoch_number = 50
+training_losses = []
+testing_accuracy = []
+batch_size = 100
+epoch_number = 5
 
 def retrieve_data():
     repository = Repository()
@@ -65,6 +66,8 @@ def train(train_dataloader, model, loss_fn, optimizer, device):
         y = y.to(device)
         # Compute prediction error
         pred = model(x).to(device)
+        print(pred.size())
+        print(torch.max(pred), torch.min(pred))
         loss = loss_fn(pred, y)
 
         # Backpropagation
@@ -72,15 +75,15 @@ def train(train_dataloader, model, loss_fn, optimizer, device):
         optimizer.step()
         optimizer.zero_grad()
 
-        loss = loss.item()
+        loss_value = loss.item()
         passed_examples += len(x[0])
-        average_loss += loss
+        average_loss += loss_value
         print(f"Loss: {loss:>7f}  [{passed_examples:>5d}/{size:>5d}]")
-    
+
     average_loss /= batch + 1
     print(f'-> Average loss : {average_loss:>7f}')
     
-    trainig_losses.append(average_loss)
+    training_losses.append(average_loss)
 
 def test(test_dataloader, model, loss_fn):
     size = len(test_dataloader.dataset)
@@ -97,8 +100,10 @@ def test(test_dataloader, model, loss_fn):
 
     test_loss /= num_batches
     correct /= size
+    accuracy = 100*correct
+    testing_accuracy.append(accuracy)
 
-    print(f"\nTest Error:\nAccuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    print(f"\nTest Error:\nAccuracy: {(accuracy):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 if __name__ == '__main__':
     torch.autograd.set_detect_anomaly(True)
@@ -115,13 +120,13 @@ if __name__ == '__main__':
     print(graph)
     
     ## Construct Dataset
-    relations_dataset = create_dataset(data_relations, data_manager, 400)
+    relations_dataset = create_dataset(data_relations, data_manager, negative_samples_count=800)
 
-    rgcn = BasicRGCN(graph=graph, in_features=2, out_features=2, data_manager=data_manager).to(device)
+    rgcn = BasicRGCN(graph=graph, in_features=2, out_features=2, data_manager=data_manager, layer_count=2).to(device)
     print(rgcn, '\n')
 
-    loss_fn = nn.MSELoss()
-    optimizer = torch.optim.SGD(rgcn.parameters(), lr=0.01)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(rgcn.parameters(), lr=0.1)
     
     for epoch in range (epoch_number):
         training_dataset, testing_dataset = split_data_relations(relations_dataset)
@@ -137,8 +142,15 @@ if __name__ == '__main__':
     torch.save(rgcn.state_dict(), "./model.pth")
     print("Saved PyTorch Model State to model.pth")
 
-    plt.plot(trainig_losses)
+    plt.plot(training_losses)
     plt.title("Loss evolution")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.savefig('./loss.png')
+    plt.close()
+
+    plt.plot(testing_accuracy)
+    plt.title("Accuracy evolution")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.savefig('./accuracy.png')
