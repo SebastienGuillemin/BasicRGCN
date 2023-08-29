@@ -28,9 +28,7 @@ class DataManager():
             for triple, label in relation_data:
                 indexe_1 = self.get_index(triple[0])
                 indexe_2 = self.get_index(triple[2])
-                
-                if (indexe_1 != None and indexe_2 != None):
-                    adjacency_matrices[i][indexe_1][indexe_2] = 1   
+                adjacency_matrices[i][indexe_1][indexe_2] = 1
         
         # Construct features matrix
         features_matrice = torch.empty(self.entities_count, len(self.entities[next(iter(self.entities))]))  # Size of the feature list of the first element in the entities dictionnary.
@@ -52,6 +50,7 @@ class DataManager():
         cpt_entity = 0
         cpt_relation = 1
         self.relation_name_mapping['selfLoop'] = 0
+        
         for name in self.relations:
             for (relation_triple, label) in self.relations[name]:
                 entity_1 = relation_triple[0]

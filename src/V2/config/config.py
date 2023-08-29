@@ -9,7 +9,7 @@ with open(dir_path + "/config.yml", "r") as stream:
         entities = config['entities']
         drug_type = config['drug_type']
         relations_list = config['relations']
-        target_relations_list = config['target_relations'][0]
+        target_relations_list = config['target_relations']
 
         network = {}
         network['graph_db_host'] = config['network']['graph_db_host']
@@ -34,12 +34,19 @@ with open(dir_path + "/config.yml", "r") as stream:
 
         print('\nDrug type : ' + drug_type)
         
-        print('\nTraget relation(s) : ' + target_relations_list)
+        print('\nRelation(s) loaded : ')
+        for relation in relations_list:
+            print(f'    - {relation}')
+
+        print('\nTraget relation(s) : ')
+        for relation in target_relations_list:
+            print(f'    - {relation}')
         
         print('\nNetwork configuration : ')
         for parameter, value in network.items():
             print('    -%s : %s' % (parameter, value))
         
-        print('############################################\n') 
+        print('############################################\n')
+
     except yaml.YAMLError as exc:
         print(exc)

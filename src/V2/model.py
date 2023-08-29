@@ -15,19 +15,21 @@ class BasicRGCN (nn.Module):
         ## Conv. layers
         self.model = nn.Sequential()
 
-        ## DistMult
+        ## DistMult + GraphSigmoid
         self.dist_mult = DistMult(out_features, self.relations_count, self.data_manager)
+        self.sigmoid = nn.Sigmoid()
 
         for i in range (layer_count):
             self.model.append(ConvolutionalLayer(self.relations_count, in_features, out_features))
+            self.model.append(GraphReLU())
 
-        for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                print (name, '\n', param.data)
+        # for name, param in self.model.named_parameters():
+        #     if param.requires_grad:
+        #         print (name, '\n', param.data)
 
-        for name, param in self.dist_mult.named_parameters():
-            if param.requires_grad:
-                print (name, '\n', param.data)
+        # for name, param in self.dist_mult.named_parameters():
+        #     if param.requires_grad:
+        #         print (name, '\n', param.data)
 
     def forward(self, x):
         embedded_graph: Graph = self.model.forward(self.graph)
@@ -43,6 +45,8 @@ class BasicRGCN (nn.Module):
 
             res[i] = self.dist_mult.forward(entity_1_embedding, relation_index, entity_2_embedding)
         
+        res = self.sigmoid(res)
+
         return res
 
 class ConvolutionalLayer(nn.Module):
@@ -67,7 +71,6 @@ class ConvolutionalLayer(nn.Module):
         for i in range(0, self.relations_count):
             y += torch.mul(c_matrices[i], torch.matmul(torch.matmul(adjacency_matrices[i], features), self.weight[i].t()))
 
-        # y = torch.relu(y)
         return Graph(graph.get_name(), graph.get_adjacency_matrices(), y, graph.get_c_matrices())
 
 class DistMult (nn.Module):
@@ -89,7 +92,7 @@ class DistMult (nn.Module):
     def forward(self, entity_1_embedding, relation_index, entity_2_embedding):
         return torch.sigmoid(torch.matmul(torch.matmul(entity_1_embedding, self.relations_matrices[relation_index]), entity_2_embedding))
 
-class GraphReLU (nn.Module):
+class GraphReLU(nn.Module):
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
@@ -100,8 +103,20 @@ class GraphReLU (nn.Module):
 
         graph.set_features(features)
         return graph
+    
+class GraphSigmoid(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.sigmoid = nn.Sigmoid()
 
-class Dropout (nn.Module):
+    def forward(self, graph: Graph):
+        features = graph.get_features()
+        features = self.sigmoid(features)
+
+        graph.set_features(features)
+        return graph
+
+class GraphDropout(nn.Module):
     def __init__(self):
         super().__init__()
         self.dropout = nn.Dropout()

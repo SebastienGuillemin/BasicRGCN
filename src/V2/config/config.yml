@@ -5,6 +5,8 @@ drug_type: Cannabis
 
 relations:
   - estProcheDe
+  # - aPrincipeActif
+  # - aSubstance
 
 target_relations:
   - estProcheDe
@@ -13,6 +15,7 @@ features:
   Echantillon:
     - epaisseur
     - masse
+
 
 network:
   graph_db_host: 127.0.0.1
