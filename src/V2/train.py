@@ -6,10 +6,14 @@ import matplotlib.pyplot as plt
 from relationdataset import RelationDataset
 from torch.utils.data import DataLoader, random_split
 
+device = ("cuda" if torch.cuda.is_available() else "cpu")
+
 training_losses = []
 testing_accuracy = []
-batch_size = 50
-epoch_number = 50
+batch_size = 100
+epoch_number = 20
+
+step_threshold = 0.7
 
 def retrieve_data():
     repository = Repository()
@@ -38,6 +42,15 @@ def construct_graph():
     data_manager = DataManager(raw_data_entities, raw_data_relations)
     graph = data_manager.construct_graph()
     graph.to(device)
+
+    ## Add selfLoop triples to raw_data_relations
+    self_loop_relations = []
+    entities_count = data_manager.get_entity_count()
+    for i in range(entities_count):
+        entity = data_manager.get_entity(i)
+        self_loop_relations.append(((entity, 'selfLoop', entity), 1))
+
+    raw_data_relations['selfLoop'] = self_loop_relations
     
     return graph, raw_data_relations, data_manager
 
@@ -52,8 +65,10 @@ def create_dataset(data_relations, data_manager, negative_samples_count):
     return dataset
 
 def split_data_relations(relations_dataset, split_ratio=0.7):
+    # generator = torch.Generator().manual_seed(42)
     train_size = int(split_ratio * len(relations_dataset))
     test_size = len(relations_dataset) - train_size
+
     return random_split(relations_dataset, [train_size, test_size])
 
 def train(train_dataloader, model, loss_fn, optimizer, device):
@@ -62,25 +77,38 @@ def train(train_dataloader, model, loss_fn, optimizer, device):
 
     passed_examples = 0
     average_loss = 0
+    pred, loss = None, None
     for batch, (x, y) in enumerate(train_dataloader):
-        y = y.to(device)
-        # Compute prediction error
-        pred = model(x).to(device)
-        loss = loss_fn(pred, y)
+        try:
+            y = y.to(device)
+            # Compute prediction error
+            pred = model(x).to(device)            
 
-        # Backpropagation
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
+            ## Step
+            pred[pred > step_threshold] = 1.0
+            pred[pred <= step_threshold] = 0.0
+            # print(pred)
+            loss = loss_fn(pred, y)
 
-        loss_value = loss.item()
-        passed_examples += len(x[0])
-        average_loss += loss_value
-        print(f"Loss: {loss:>7f}  [{passed_examples:>5d}/{size:>5d}]")
+            # Backpropagation
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+            loss_value = loss.item()
+            passed_examples += len(x[0])
+            average_loss += loss_value
+            print(f"Loss: {loss_value:>7f}  [{passed_examples:>5d}/{size:>5d}]")
+        
+        except RuntimeError as re:
+            print(re)
+            print('Prdicted values :', pred)
+            print('Loss :', loss)
+            exit()
 
     average_loss /= batch + 1
     print(f'-> Average loss : {average_loss:>7f}')
-    
+
     training_losses.append(average_loss)
 
 def test(test_dataloader, model, loss_fn):
@@ -93,37 +121,36 @@ def test(test_dataloader, model, loss_fn):
         for x, y in test_dataloader:
             y = y.to(device)
             pred = model(x).to(device)
-            test_loss += loss_fn(pred, y).item()
+
+            ## Step
+            pred[pred >= step_threshold] = 1.0
+            pred[pred < step_threshold] = 0.0
+
             correct += (pred.argmax(0) == y).type(torch.float).sum().item()
 
-    test_loss /= num_batches
     correct /= size
     accuracy = 100*correct
     testing_accuracy.append(accuracy)
 
-    print(f"\nTest Error:\nAccuracy: {(accuracy):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    print(f"\nTest Error:\nAccuracy: {(accuracy):>0.1f}%\n")
 
 if __name__ == '__main__':
     torch.autograd.set_detect_anomaly(True)
 
-    device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "cpu"
-    )
+    ## Print device
     print(f"Using {device} device")
 
     ## Construct graph and retrive relations triples
     graph, data_relations, data_manager = construct_graph()
     print(graph)
-    
+
     ## Construct Dataset
     relations_dataset = create_dataset(data_relations, data_manager, negative_samples_count=800)
 
-    rgcn = BasicRGCN(graph=graph, in_features=2, out_features=2, data_manager=data_manager, layer_count=5).to(device)
+    rgcn = BasicRGCN(graph=graph, in_features=2, out_features=2, data_manager=data_manager, layer_count=2).to(device)
     print(rgcn, '\n')
 
-    loss_fn = nn.MSELoss()
+    loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(rgcn.parameters(), lr=0.1)
     
     for epoch in range (epoch_number):

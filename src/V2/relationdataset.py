@@ -30,23 +30,25 @@ class RelationDataset(Dataset):
         relation_name = relation
 
         for i in range (negative_examples_count):
+            ## If no relation provided, select a random relation
             if relation == None:
                 index_relation = randrange(random_upper_bound_relation)
                 relation_name = data_manager.get_relation_name(index_relation)
 
+            ## Select a random  first entity
             index_1 = randrange(random_upper_bound_entity)
             entity_1 = data_manager.get_entity(index_1)
-            if (entity_1 == None):
-                print("None : ", index_1)
   
+            ## Generate non existing random triple with entity_1 as first entity
             new_tuple = None
-
             while True:
                 index_2 = randrange(random_upper_bound_entity)
                 entity_2 = data_manager.get_entity(index_2)
-                new_tuple = (entity_1, relation_name, entity_2)
-                if entity_1 != entity_2 and new_tuple not in data_manager.get_relations():
-                    break
+                if entity_1 != entity_2:
+                    new_tuple = (entity_1, relation_name, entity_2)
+                    if new_tuple not in data_manager.get_relations():
+                        break
+
             self.X.append(new_tuple)
             self.Y.append(torch.tensor(float(0.0)))
         

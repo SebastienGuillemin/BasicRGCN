@@ -13,10 +13,11 @@ class DataManager():
         
         self._compute_indexes(entities_features)
 
+
         self.entities_count = len(self.indexes_cache)
         self.relations_count = len(self.relations)
 
-    def construct_graph(self):        
+    def construct_graph(self): 
         # Construct adjacency matrices
         adjacency_matrices = torch.zeros(self.relations_count + 1, self.entities_count, self.entities_count)
 
@@ -43,13 +44,14 @@ class DataManager():
                 features_matrice[index][i] = entity_features[name]
                 i += 1
 
-        features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix     
+        features_matrice = features_matrice / features_matrice.max(0, keepdim=True)[0] # Normalize features matrix
 
         return Graph('Graph', adjacency_matrices, features_matrice)
     
     def _compute_indexes(self, entities_features):
         cpt_entity = 0
-        cpt_relation = 0
+        cpt_relation = 1
+        self.relation_name_mapping['selfLoop'] = 0
         for name in self.relations:
             for (relation_triple, label) in self.relations[name]:
                 entity_1 = relation_triple[0]
